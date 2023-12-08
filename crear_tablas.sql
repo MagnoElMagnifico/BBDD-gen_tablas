@@ -22,7 +22,6 @@ create table socios (
     apellido2 varchar(50) not null,
     email     varchar(50),
     direccion varchar(100),
-    --telefono  telefono not null, -- Para que está la tabla de teléfonos sino?
     grado     varchar(50),
     fecha_egresado date
 );
@@ -31,7 +30,7 @@ create table libros (
     cod_libro serial primary key,
     titulo    varchar(100) not null, -- El titulo es obligatorio
     idioma    varchar(15) not null,
-    editorial varchar(15) not null,
+    editorial varchar(50) not null,
     edicion   smallint,
     fecha_pub date,
     paginas   int,
@@ -64,10 +63,10 @@ create table bibliotecarios (
 );
 
 create table valoraciones (
-    socio int references socios(codigo)
+    socio int references socios(cod_socio)
                          on update cascade
                          on delete set default, -- Si un socio se va, se mantienen sus valoraciones
-    libro int references libros(codigo)
+    libro int references libros(cod_libro)
                          on update cascade
                          on delete cascade, -- Se borra la valoración si se borra el libro
     valoracion valoracion not null, -- Hacer una valoración es obligatorio
@@ -75,10 +74,10 @@ create table valoraciones (
 );
 
 create table prestamos (
-    socio int references socios(codigo)
+    socio int references socios(cod_socio)
                          on update cascade
                          on delete set default,
-    libro int references libros(codigo)
+    libro int references libros(cod_libro)
                          on update cascade
                          on delete set default,
     bibliotecario dni references bibliotecarios(dni)
@@ -93,16 +92,16 @@ create table escribir (
     autor_nombre    char(50),
     autor_apellido1 char(50),
     autor_apellido2 char(50),
-    libro int references libros(codigo),
+    libro int references libros(cod_libro),
     primary key (autor_nombre, autor_apellido1, autor_apellido2, libro),
-    foreign key (autor_nombre, autor_apellido, autor_apellido2) references autores (nombre, apellido1, apellido2)
+    foreign key (autor_nombre, autor_apellido1, autor_apellido2) references autores (nombre, apellido1, apellido2)
             on update cascade
             on delete no action -- No puede quedar el libro sin autor
 
 );
 
 create table telefonos_socios (
-    socio int references socios(codigo)
+    socio int references socios(cod_socio)
                          on update cascade
                          on delete cascade, -- Si se borra un socio, también sus teléfonos
     telefono telefono,

@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 import random 
 import csv
 
@@ -137,9 +137,12 @@ def gen_direccion(calles):
 
 def gen_fecha(inicio, fin):
     año = random.randint(inicio.year, fin.year)
-    mes = random.randint(inicio.month, fin.month)
-    dia = random.randint(inicio.day, fin.day)
+    mes = random.randint(1, 12)
+    dia = random.randint(1, 30) if mes != 2 else random.randint(1, 28)
     return date(año, mes, dia)
+
+def gen_fecha_con_hora(fecha):
+    return datetime(fecha.year, fecha.month, fecha.day, random.randint(9, 19), random.randint(0, 59))
 
 def gen_grado():
     return random.choice(GRADOS)

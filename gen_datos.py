@@ -22,7 +22,7 @@ BIBLIOTECAS = [
     ('Formación do Profesorado',           'Avda. de Ramón Ferreiro, s/n, 27002 Lugo',                          '982821007', '8:30', '21:30'),
     ('Matemáticas',                        'Rúa Lope Gómez de Marzoa, s/n, 15782 Santiago de Compostela',       '881813128', '8:30', '21:00'),
     ('Medicina e Odontoloxía',             'Rúa de San Francisco, s/n , 15782 Santiago de Compostela',          '881812411', '8:30', '21:30'),
-    ('Psicoloxía e Ciencias da Educación', 'Rúa Prof. Vicente Fráiz Andón, s/n, 15782 Santiago de Compostela',  '881813720', '8.30', '21.00'),
+    ('Psicoloxía e Ciencias da Educación', 'Rúa Prof. Vicente Fráiz Andón, s/n, 15782 Santiago de Compostela',  '881813720', '8:30', '21:00'),
     ('Xeografía e Historia',               'Praza da Universidade, 1, 15703 Santiago de Compostela',            '881812687', '8:30', '21:30')
 ]
 
@@ -81,12 +81,13 @@ with open(args.salida, 'w') as out, NombresVac(args.vacunodromo) as nombres, ope
 
     #### Socios ####
     out.write('\n-- Socios\n')
-    sentencia = 'insert into socios (nombre, apellido1, apellido2, email, direccion, grado, fecha_egresado) values\n'
+    sentencia = 'insert into socios (cod_socio, nombre, apellido1, apellido2, email, direccion, grado, fecha_egresado) values\n'
 
-    for id_socio, socio in enumerate(nombres):
-        if id_socio >= args.num_socios: break
+    for cod_socio, socio in enumerate(nombres):
+        if cod_socio >= args.num_socios: break
 
         tupla = (
+            cod_socio+1,
             *socio,
             gen_email(*socio),
             gen_direccion(args.calles),
@@ -94,17 +95,18 @@ with open(args.salida, 'w') as out, NombresVac(args.vacunodromo) as nombres, ope
             gen_fecha(dt.date(2000, 1, 1), dt.date.today()).strftime('%Y-%m-%d')
         )
 
-        write(out, sentencia, tupla, id_socio, args.num_socios)
+        write(out, sentencia, tupla, cod_socio, args.num_socios)
 
     #### Libros ####
     libros_biblioteca = []
     out.write('\n-- Libros\n')
-    sentencia = 'insert into libros (titulo, idioma, editorial, edicion, fecha_pub, paginas, biblioteca) values\n'
+    sentencia = 'insert into libros (cod_libro, titulo, idioma, editorial, edicion, fecha_pub, paginas, biblioteca) values\n'
 
-    for id_libro, titulo in enumerate(titulos):
-        if id_libro >= args.num_libros: break
+    for cod_libro, titulo in enumerate(titulos):
+        if cod_libro >= args.num_libros: break
 
         tupla = (
+            cod_libro+1,
             titulo.strip(),
             gen_idioma(),
             gen_editorial(args.editoriales),
@@ -114,7 +116,7 @@ with open(args.salida, 'w') as out, NombresVac(args.vacunodromo) as nombres, ope
             random.choice(bibliotecas_pk)
         )
 
-        write(out, sentencia, tupla, id_libro, args.num_libros)
+        write(out, sentencia, tupla, cod_libro, args.num_libros)
         libros_biblioteca.append(tupla[-1])
 
     
@@ -194,15 +196,15 @@ with open(args.salida, 'w') as out, NombresVac(args.vacunodromo) as nombres, ope
                 fecha_prestamo = dt.date.today() - dt.timedelta(days=random.randint(0, 40))
                 fecha_devolucion = 'null'
 
-                fecha_prestamo = fecha_prestamo.strftime('%Y-%m-%d')
+                fecha_prestamo = gen_fecha_con_hora(fecha_prestamo).strftime("'%Y-%m-%d %H:%M'")
 
             else:
                 # Ya ha sido devuelto
                 fecha_prestamo = gen_fecha(dt.date(2000, 1, 1), dt.date.today())
                 fecha_devolucion = fecha_prestamo + dt.timedelta(days=random.randint(5, 40))
 
-                fecha_prestamo = fecha_prestamo.strftime('%Y-%m-%d')
-                fecha_devolucion = fecha_devolucion.strftime('%Y-%m-%d')
+                fecha_prestamo = gen_fecha_con_hora(fecha_prestamo).strftime("'%Y-%m-%d %H:%M'")
+                fecha_devolucion = gen_fecha_con_hora(fecha_devolucion).strftime("'%Y-%m-%d %H:%M'")
 
             cod_libro = random.randint(1, args.num_libros)
             posibles_bibliotecarios = [bibliotecario for bibliotecario, biblioteca in bibliotecarios_pk if biblioteca == libros_biblioteca[cod_libro-1]]
@@ -219,7 +221,8 @@ with open(args.salida, 'w') as out, NombresVac(args.vacunodromo) as nombres, ope
                 prestamos_pk.add(tupla[:-1])
                 break
 
-        write(out, sentencia, tupla, i, args.num_prestamos)
+        format_tupla = f"({tupla[0]}, {tupla[1]}, '{tupla[2]}', {tupla[3]}, {tupla[4]})"
+        write(out, sentencia, format_tupla, i, args.num_prestamos)
 
     #### Valoraciones ####
     # Solo puede haber valoraciones sobre libros que han sido prestados por ese socio
@@ -227,18 +230,20 @@ with open(args.salida, 'w') as out, NombresVac(args.vacunodromo) as nombres, ope
     out.write('\n-- Valoraciones\n')
     sentencia = 'insert into valoraciones (socio, libro, valoracion) values\n'
 
-    num_valoraciones = 0
     valoraciones_esperadas = int((random.uniform(0.55, 0.25)) * len(prestamos_pk))
 
+    valoraciones_pk = set()
+
     for socio, libro, _, _ in cycle(prestamos_pk):
-        if num_valoraciones >= valoraciones_esperadas: break
+        if len(valoraciones_pk) >= valoraciones_esperadas: break
 
         if random.choices([True, False], weights=[3, 7])[0]:
             continue
 
-        tupla = (socio, libro, random.randint(10, 50) / 10)
-        write(out, sentencia, tupla, num_valoraciones, valoraciones_esperadas)
-        num_valoraciones += 1
+        valoraciones_pk.add((socio, libro))
+        
+    for i, tupla in enumerate(valoraciones_pk):
+        write(out, sentencia, (*tupla, random.randint(10, 50) / 10), i, len(valoraciones_pk))
 
     #### TelefonosSocios ####
     out.write('\n-- TelefonosSocios\n')
