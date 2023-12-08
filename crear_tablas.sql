@@ -1,16 +1,11 @@
--- la relaciones de grado 3 1->1, tiene una clave primaria de dos atributos y dos claves cantidatas
--- AB PK CC
--- BC CC
--- AC CC
-
 -- Se van a considerar telefonos fijos y
 -- móviles con el prefijo español
-create type telefono as char(9);
-create type dni as char(9);
+create domain telefono as char(9);
+create domain dni as char(9);
 
 -- Definir una valoración basada en estrellas
 create domain valoracion as decimal (2, 1)
-       check (value between 1.0 and 5.0)
+       check (value between 1.0 and 5.0);
 
 create table bibliotecas (
     nombre        varchar(50) primary key,
@@ -21,7 +16,7 @@ create table bibliotecas (
 );
 
 create table socios (
-    codigo    serial primary key,
+    cod_socio serial primary key,
     nombre    varchar(50) not null, -- El nombre es obligatorio
     apellido1 varchar(50) not null,
     apellido2 varchar(50) not null,
@@ -33,8 +28,8 @@ create table socios (
 );
 
 create table libros (
-    codigo    serial primary key,
-    titulo    varchar(50) not null, -- El titulo es obligatorio
+    cod_libro serial primary key,
+    titulo    varchar(100) not null, -- El titulo es obligatorio
     idioma    varchar(15) not null,
     editorial varchar(15) not null,
     edicion   smallint,
@@ -113,22 +108,3 @@ create table telefonos_socios (
     telefono telefono,
     primary key (socio, telefono)
 );
-
--- Insercion de datos
-
-insert into bibliotecas (nombre, localizacion, telefono, hora_apertura, hora_cierre) values
-    ('ETSE', 'Rúa Lope Gómez de Marzoa, s/n, 15782 Santiago de Compostela', '881816706', '8:30', '20:30'),
-    ('Concepción Arenal', 'Rúa dos Feáns, s/n. Campus Vida, 15782 Santiago de Compostela', '881815210', '8:30', '20:30'),
-    ('Bioloxía', 'Rúa Lope Gómez de Marzoa, s/n, 15782 Santiago de Compostela', '881813246', '8:30', '20:00'),
-    ('Ciencias da Comunicación', 'Avda de Castelao, s/n. Campus norte, 15782 Santiago de Compostela', '881816505', '8:30', '20:15'),
-    ('Ciencias Económicas e Empresariais', 'Avda. do Burgo, s/n, 15782 Santiago de Compostela', '881811510', '8:30', '21:30'),
-    ('Enfermaría', 'Avda. Xoan XXIII, 15782 Santiago de Compostela', '881 812 066', '8:30', '21:30'),
-    ('Farmacia', 'Avenida de Vigo, s/n, 15782 Santiago de Compostela', '881 815 242', '8:30', '21:00'),
-    ('Filoloxía', 'Avda. de Castelao, s/n, 15782 Santiago de Compostela', '881 811 752', '8:30', '20:20'),
-    ('Filosofía', 'Praza de Mazarelos, s/n, 15782 Santiago de Compostela', '881 812 500', '8:30', '20:30'),
-    ('Física e Óptica e Optometría', 'Rúa Xosé María Suárez Núñez, s/n, 15782 Santiago de Compostela', '881 814 071', '8:30', '21:30'),
-    ('Formación do Profesorado', 'Avda. de Ramón Ferreiro, s/n, 27002 Lugo', '982 821 007', '8:30', '21:30'),
-    ('Matemáticas', 'Rúa Lope Gómez de Marzoa, s/n, 15782 Santiago de Compostela', '881 813 128', '8:30', '21:00'),
-    ('Medicina e Odontoloxía', 'Rúa de San Francisco, s/n , 15782 Santiago de Compostela', '881 812 411', '8:30', '21:30'),
-    ('Psicoloxía e Ciencias da Educación', 'Rúa Prof. Vicente Fráiz Andón, s/n, 15782 Santiago de Compostela', '881 813 720', '8.30', '21.00'),
-    ('Xeografía e Historia', 'Praza da Universidade, 1, 15703 Santiago de Compostela', '881 812 687', '8:30', '21:30')

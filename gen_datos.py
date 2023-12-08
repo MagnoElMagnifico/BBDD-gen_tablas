@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
 from generar import *
-from datetime import date
 from itertools import cycle
+import datetime as dt
 import argparse
 import random
 
@@ -31,6 +31,7 @@ NOMBRES = 'datos/nombres.csv'
 APELLIDOS = 'datos/apellidos.csv'
 EDITORIALES = 'datos/editoriales.txt'
 NOMBRES_CALLE = 'datos/direcciones.txt'
+TITULOS = 'datos/libros.txt'
 
 # Argumentos de línea de comandos
 parser = argparse.ArgumentParser()
@@ -41,13 +42,14 @@ parser.add_argument('--nombres', nargs='?', default=NOMBRES, help='Archivo CSV d
 parser.add_argument('--apellidos', nargs='?', default=APELLIDOS, help='Archivo CSV de apellidos')
 parser.add_argument('--editoriales', nargs='?', default=EDITORIALES, help='Archivo TXT de editoriales')
 parser.add_argument('--calles', nargs='?', default=NOMBRES_CALLE, help='Archivo TXT de nombres de calle')
+parser.add_argument('--titulos', nargs='?', default=TITULOS, help='Archivo TXT de títulos de libros')
 
 parser.add_argument('--max-datos', type=int, nargs='?', default=100)
-parser.add_argument('--num-socios', type=int, nargs='?', default=500)
-parser.add_argument('--num-libros', type=int, nargs='?', default=1000)
-parser.add_argument('--num-autores', type=int, nargs='?', default=50)
+parser.add_argument('--num-socios', type=int, nargs='?', default=300) # 300
+parser.add_argument('--num-libros', type=int, nargs='?', default=900) # 900
+parser.add_argument('--num-autores', type=int, nargs='?', default=75) # 75
 parser.add_argument('--num-bibliotecarios', type=int, nargs='?', default=2*len(BIBLIOTECAS))
-parser.add_argument('--num-prestamos', type=int, nargs='?', default=1500)
+parser.add_argument('--num-prestamos', type=int, nargs='?', default=3000)
 args = parser.parse_args()
 
 
@@ -68,101 +70,195 @@ def write(file, sentencia, data, i, max):
     file.write(f'  {data}{ending}')
 
 
-with open(args.salida, 'w') as out:
-    # Bibliotecas
+with open(args.salida, 'w') as out, NombresVac(args.vacunodromo) as nombres, open(args.titulos, 'r') as titulos:
+    #### Bibliotecas ####
     bibliotecas_pk = [] 
     out.write('-- Bibliotecas\n')
     sentencia = 'insert into bibliotecas (nombre, localizacion, telefono, hora_apertura, hora_cierre) values\n'
     for id_socio, bib in enumerate(BIBLIOTECAS):
         bibliotecas_pk.append(bib[0])
         write(out, sentencia, bib, id_socio, len(BIBLIOTECAS))
+
+    #### Socios ####
+    out.write('\n-- Socios\n')
+    sentencia = 'insert into socios (nombre, apellido1, apellido2, email, direccion, grado, fecha_egresado) values\n'
+
+    for id_socio, socio in enumerate(nombres):
+        if id_socio >= args.num_socios: break
+
+        tupla = (
+            *socio,
+            gen_email(*socio),
+            gen_direccion(args.calles),
+            gen_grado(),
+            gen_fecha(dt.date(2000, 1, 1), dt.date.today()).strftime('%Y-%m-%d')
+        )
+
+        write(out, sentencia, tupla, id_socio, args.num_socios)
+
+    #### Libros ####
+    libros_biblioteca = []
+    out.write('\n-- Libros\n')
+    sentencia = 'insert into libros (titulo, idioma, editorial, edicion, fecha_pub, paginas, biblioteca) values\n'
+
+    for id_libro, titulo in enumerate(titulos):
+        if id_libro >= args.num_libros: break
+
+        tupla = (
+            titulo.strip(),
+            gen_idioma(),
+            gen_editorial(args.editoriales),
+            random.randint(1, 15),
+            gen_fecha(dt.date(1960, 1, 1), dt.date.today()).strftime('%Y-%m-%d'),
+            random.randint(150, 1500),
+            random.choice(bibliotecas_pk)
+        )
+
+        write(out, sentencia, tupla, id_libro, args.num_libros)
+        libros_biblioteca.append(tupla[-1])
+
     
-    with NombresVac(args.vacunodromo) as nombres:
-        # TODO?: saltar un par de nombres aleatoriamente para que empiece siempre por los mismos
+    #### Autores ####
+    autores_pk = []
+    out.write('\n-- Autores\n')
+    sentencia = 'insert into autores (nombre, apellido1, apellido2, pais, fecha_nacimiento) values\n'
 
-        # Socios
-        out.write('\n-- Socios\n')
-        sentencia = 'insert into socios (nombre, apellido1, apellido2, email, direccion, grado, fecha_egresado) values\n'
+    for id_socio, autor in enumerate(nombres):
+        if id_socio >= args.num_autores: break
+        autores_pk.append(autor)
 
-        for id_socio, socio in enumerate(nombres):
-            if id_socio >= args.num_socios: break
+        tupla = (*autor, gen_pais(), gen_fecha(dt.date(1900, 1, 1), dt.date(2000, 1, 1)).strftime('%Y-%m-%d'))
+        write(out, sentencia, tupla, id_socio, args.num_autores)
+
+    #### Bibliotecarios ####
+    # El horario del bibliotecario debe ser coherente con el de la biblioteca
+    bibliotecarios_pk = []
+    out.write('\n-- Bibliotecarios\n')
+    sentencia = 'insert into bibliotecarios (dni, nombre, apellido1, apellido2, sueldo, hora_entrada, hora_salida, fecha_contrato, biblioteca) values\n'
+
+    for id_socio, (bibliotecario, biblioteca) in enumerate(zip(nombres, cycle(bibliotecas_pk))):
+        if id_socio >= args.num_bibliotecarios: break
+
+        dni = gen_dni()
+        bibliotecarios_pk.append((dni, biblioteca))
+
+        # TODO: mejorar el horario de los bibliotecarios repartiendo el tiempo
+        # Ahora solo se toma el horario de la biblioteca
+
+        tupla = (
+            dni,
+            *bibliotecario,
+            10 * random.randint(130, 190),
+            BIBLIOTECAS[id_socio % len(BIBLIOTECAS)][-2], BIBLIOTECAS[id_socio % len(BIBLIOTECAS)][-1],
+            gen_fecha(dt.date(2000, 1, 1), dt.date.today()).strftime('%Y-%m-%d'),
+            biblioteca
+        )
+
+        write(out, sentencia, tupla, id_socio, args.num_bibliotecarios)
+    
+    #### Escribir ####
+    # No se puede repetir el mismo autor para el mismo libro
+    # Hay otros coautores, pero son menos probables
+    out.write('\n-- Escribir\n')
+    sentencia = 'insert into escribir (autor_nombre, autor_apellido1, autor_apellido2, libro) values\n'
+
+    # Rellenar el conjunto de datos, lo que nos
+    # garantiza que no habrá elementos repetidos
+    escribir_pk = set()
+
+    for id_libro in range(args.num_libros):
+        num_autores_libro = random.choices([1, 2, 3, 4], weights=[50, 30, 20, 5])[0]
+
+        for _ in range(num_autores_libro):
+            escribir_pk.add((*random.choice(autores_pk), id_libro+1))
+
+    # Finalmente, escribir los datos
+    for i, tupla in enumerate(escribir_pk):
+        write(out, sentencia, tupla, i, len(escribir_pk))
+
+    #### Prestamos ####
+    # El libro está en una biblioteca y en la que hay unos determinados bibliotecarios
+    # No se puede repetir la combinación (socio, libro, bibliotecario, fecha_prestamo)
+    out.write('\n-- Prestamos\n')
+    sentencia = 'insert into prestamos (socio, libro, bibliotecario, fecha_prestamo, fecha_devolucion) values\n'
+    
+    prestamos_pk = set()
+
+    for i in range(args.num_prestamos):
+        tupla = None
+
+        while True:
+            # Generar las fechas de devolución
+            if random.choices([True, False], weights=[2, 10])[0]:
+                # Todavía no ha sido devuelto
+                fecha_prestamo = dt.date.today() - dt.timedelta(days=random.randint(0, 40))
+                fecha_devolucion = 'null'
+
+                fecha_prestamo = fecha_prestamo.strftime('%Y-%m-%d')
+
+            else:
+                # Ya ha sido devuelto
+                fecha_prestamo = gen_fecha(dt.date(2000, 1, 1), dt.date.today())
+                fecha_devolucion = fecha_prestamo + dt.timedelta(days=random.randint(5, 40))
+
+                fecha_prestamo = fecha_prestamo.strftime('%Y-%m-%d')
+                fecha_devolucion = fecha_devolucion.strftime('%Y-%m-%d')
+
+            cod_libro = random.randint(1, args.num_libros)
+            posibles_bibliotecarios = [bibliotecario for bibliotecario, biblioteca in bibliotecarios_pk if biblioteca == libros_biblioteca[cod_libro-1]]
 
             tupla = (
-                *socio,
-                gen_email(*socio),
-                gen_direccion(args.calles),
-                gen_grado(),
-                gen_fecha(date(2000, 1, 1), date.today())
+                random.randint(1, args.num_socios),
+                cod_libro,
+                random.choice(posibles_bibliotecarios),
+                fecha_prestamo,
+                fecha_devolucion
             )
 
-            write(out, sentencia, tupla, id_socio, args.num_socios)
+            if tupla[:-1] not in prestamos_pk:
+                prestamos_pk.add(tupla[:-1])
+                break
 
-        # TODO: Libros
-        
-        # Autores
-        autores_pk = [] # Se almacenan para luego crear 'escribir'
-        out.write('\n-- Autores\n')
-        sentencia = 'insert into autores (nombre, apellido1, apellido2, pais, fecha_nacimiento) values\n'
+        write(out, sentencia, tupla, i, args.num_prestamos)
 
-        for id_socio, autor in enumerate(nombres):
-            if id_socio >= args.num_autores: break
-            autores_pk.append(autor)
+    #### Valoraciones ####
+    # Solo puede haber valoraciones sobre libros que han sido prestados por ese socio
+    # No tiene por qué haber valoraciones de todos y cada uno de los préstamos
+    out.write('\n-- Valoraciones\n')
+    sentencia = 'insert into valoraciones (socio, libro, valoracion) values\n'
 
-            tupla = (*autor, gen_pais(), gen_fecha(date(1900, 1, 1), date(2000, 1, 1)))
-            write(out, sentencia, tupla, id_socio, args.num_autores)
+    num_valoraciones = 0
+    valoraciones_esperadas = int((random.uniform(0.55, 0.25)) * len(prestamos_pk))
 
-        # Bibliotecarios
-        bibliotecarios_pk = []
-        out.write('\n-- Bibliotecarios\n')
-        sentencia = 'insert into bibliotecarios (dni, nombre, apellido1, apellido2, sueldo, hora_entrada, hora_salida, fecha_contrato, biblioteca) values\n'
+    for socio, libro, _, _ in cycle(prestamos_pk):
+        if num_valoraciones >= valoraciones_esperadas: break
 
-        for id_socio, (bibliotecario, biblioteca)  in enumerate(zip(nombres, cycle(bibliotecas_pk))):
-            if id_socio >= args.num_bibliotecarios: break
+        if random.choices([True, False], weights=[3, 7])[0]:
+            continue
 
-            dni = gen_dni()
-            bibliotecarios_pk.append(dni)
+        tupla = (socio, libro, random.randint(10, 50) / 10)
+        write(out, sentencia, tupla, num_valoraciones, valoraciones_esperadas)
+        num_valoraciones += 1
 
-            # TODO: mejorar el horario de los bibliotecarios repartiendo el tiempo
-            # Ahora solo se toma el horario de la biblioteca
+    #### TelefonosSocios ####
+    out.write('\n-- TelefonosSocios\n')
+    sentencia = 'insert into telefonos_socios (socio, telefono) values\n'
 
-            tupla = (
-                dni,
-                *bibliotecario,
-                10 * random.randint(130, 190),
-                BIBLIOTECAS[id_socio % len(BIBLIOTECAS)][-2], BIBLIOTECAS[id_socio % len(BIBLIOTECAS)][-1],
-                gen_fecha(date(2000, 1, 1), date.today()),
-                biblioteca
-            )
+    telefonos_esperados = args.num_socios
+    num_telefonos = 0
 
-            write(out, sentencia, tupla, id_socio, args.num_bibliotecarios)
-        
-        # Valoraciones
+    for id_socio in range(args.num_socios):
+        write(out, sentencia, (id_socio+1, gen_telefono()), num_telefonos, telefonos_esperados)
+        num_telefonos += 1
 
-        # Prestamos
-
-        # Escribir
-
-        # TelefonosSocios
-        out.write('\n-- TelefonosSocios\n')
-        sentencia = 'insert into telefonos_socios (socio, telefono) values\n'
-
-        telefonos_esperados = args.num_socios
-        num_telefonos = 0
-
-        for id_socio in range(args.num_socios):
+        # Posibilidades de tener 2 teléfonos: 1/3
+        if num_telefonos < telefonos_esperados and random.randint(1, 3) == 1:
+            telefonos_esperados += 1
             write(out, sentencia, (id_socio+1, gen_telefono()), num_telefonos, telefonos_esperados)
             num_telefonos += 1
 
-            # Posibilidades de tener 2 teléfonos: 1/3
-            if random.randint(1, 3) == 1:
-                telefonos_esperados += 1
-                write(out, sentencia, (id_socio+1, gen_telefono()), num_telefonos, telefonos_esperados)
-                num_telefonos += 1
-
-            # Posibilidades de tener 3 teléfonos: 1/3 * 1/4 = 0.167
-            if random.randint(1, 4) == 1:
-                telefonos_esperados += 1
-                write(out, sentencia, (id_socio+1, gen_telefono()), num_telefonos, telefonos_esperados)
-                num_telefonos += 1
-            
-
+        # Posibilidades de tener 3 teléfonos: 1/3 * 1/4 = 0.167
+        if num_telefonos < telefonos_esperados and random.randint(1, 4) == 1:
+            telefonos_esperados += 1
+            write(out, sentencia, (id_socio+1, gen_telefono()), num_telefonos, telefonos_esperados)
+            num_telefonos += 1

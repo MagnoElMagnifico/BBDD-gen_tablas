@@ -1,3 +1,4 @@
+from datetime import date
 import random 
 import csv
 
@@ -93,6 +94,10 @@ def read_random_line(afile):
         line = aline
     return line.strip()
 
+def gen_editorial(filepath):
+    with open(filepath, 'r') as f:
+        return read_random_line(f)
+
 def gen_idioma():
     return random.choices(IDIOMAS['valores'], weights=IDIOMAS['probabilidad'])[0]
 
@@ -134,7 +139,7 @@ def gen_fecha(inicio, fin):
     año = random.randint(inicio.year, fin.year)
     mes = random.randint(inicio.month, fin.month)
     dia = random.randint(inicio.day, fin.day)
-    return f'{año}-{mes}-{dia}'
+    return date(año, mes, dia)
 
 def gen_grado():
     return random.choice(GRADOS)
