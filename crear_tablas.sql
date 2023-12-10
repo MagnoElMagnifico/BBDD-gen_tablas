@@ -92,7 +92,9 @@ create table escribir (
     autor_nombre    char(50),
     autor_apellido1 char(50),
     autor_apellido2 char(50),
-    libro int references libros(cod_libro),
+    libro int references libros(cod_libro)
+                         on update cascade
+                         on delete cascade, -- Si se borra un libro, se borra la relación con su autor
     primary key (autor_nombre, autor_apellido1, autor_apellido2, libro),
     foreign key (autor_nombre, autor_apellido1, autor_apellido2) references autores (nombre, apellido1, apellido2)
             on update cascade
