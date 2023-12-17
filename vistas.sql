@@ -13,6 +13,7 @@ from socios
      join libros on libro = cod_libro
 where fecha_devolucion is null 
 
+
 -- 2: Vista de devoluciones tardías
 create view devoluciones_tarde (
     cod_libro, titulo,
@@ -33,6 +34,7 @@ where now() - fecha_prestamo > interval '30 days'
   and fecha_devolucion is null
 order by fecha_prestamo asc
 
+
 -- 3: Libros disponibles en la biblioteca de Matemáticas
 create view libros_disponibles (cod_libro, titulo) as
 select cod_libro, titulo
@@ -44,6 +46,7 @@ from libros l2
      join bibliotecas b2 on l2.biblioteca = b2.nombre
      join prestamos p on l2.cod_libro = p.libro
 where fecha_devolucion is null
+
 
 -- 4: Valoración media de cada libro, junto con su número de reseñas
 create view valoracion_media (cod_libro, titulo, valoracion_media, num_valoraciones) as
