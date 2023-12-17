@@ -1,7 +1,7 @@
 -- 1: Obtener el nombre de todos los libros en la "Biblioteca ETSE".
 select titulo
 from libros
-where biblioteca  = 'ETSE'
+where biblioteca = 'ETSE'
 
 
 -- 2: Obtener todos los datos del libro "Física de Partículas".
@@ -17,7 +17,7 @@ where pais = 'España'
 
 
 -- 4: Obtener el nombre de todos los usuarios con grado "Ingeniería Informática".
-select *
+select nombre, apellido1, apellido2
 from socios
 where grado = 'Informática'
 
