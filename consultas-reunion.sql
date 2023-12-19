@@ -41,38 +41,14 @@ having count(libro) = (select count(libro) num
 select a.nombre, a.apellido1, a.apellido2,
        round(avg(v.valoracion), 1) valoracion_autor,
        count(v.valoracion) num_valoraciones
-from autores a
-    join escribir e on (
-        a.nombre = e.autor_nombre
-        and a.apellido1 = e.autor_apellido1
-        and a.apellido2 = e.autor_apellido2)
-    join libros l on e.libro = l.cod_libro
-    join valoraciones v on l.cod_libro = v.libro
+from escribir e join valoraciones v on l.cod_libro = v.libro
 group by a.nombre, a.apellido1, a.apellido2 
-order by valoracion_autor desc, num_valoraciones desc
-
--- TODO: no dan el mismo resultado
-select a.nombre, a.apellido1, a.apellido2,
-       round(avg(vm.valoracion_media), 1) valoracion_autor,
-       sum(vm.num_valoraciones) num_valoraciones
-from autores a
-     join escribir e on (
-        a.nombre = e.autor_nombre
-        and a.apellido1 = e.autor_apellido1
-        and a.apellido2 = e.autor_apellido2)
-     join valoracion_media vm on e.libro = vm.cod_libro
-group by a.nombre, a.apellido1, a.apellido2
 order by valoracion_autor desc, num_valoraciones desc
 
 
 -- 5: Obtener el nombre de los autores que tienen 5 libros o más en la "ETSE"
 select a.nombre, a.apellido1, a.apellido2
-from autores a
-    join escribir e on (
-        a.nombre = e.autor_nombre
-        and a.apellido1 = e.autor_apellido1
-        and a.apellido2 = e.autor_apellido2)
-    join libros l on e.libro = l.cod_libro
+from escribir e join libros l on e.libro = l.cod_libro
 where l.biblioteca = 'ETSE'
 group by a.nombre, a.apellido1, a.apellido2
 having count(a.nombre) >= 5
@@ -89,7 +65,7 @@ where s.fecha_egresado = (select min(s2.fecha_egresado)
 
 -- 7: Obtener el usuario que más libros ha valorado.
 select s.nombre, s.cod_socio, count(*)
-from socios s , valoraciones v
+from socios s, valoraciones v
 where s.cod_socio = v.socio
 group by s.nombre, s.cod_socio 
 having count(*) >= all(select count(*)
@@ -98,18 +74,18 @@ having count(*) >= all(select count(*)
 
 
 -- 8: Los 30 mejores valorados libros disponibles de matemáticas
-select l.cod_libro, round(avg(v.valoracion), 1) valoracion_media
+select l.cod_libro, l.titulo, round(avg(v.valoracion), 1) valoracion_media
 from libros l
      join valoraciones v on l.cod_libro = v.libro
      join prestamos p on l.cod_libro = p.libro
 where p.fecha_devolucion is not null
   and l.biblioteca = 'Matemáticas'
-group by l.cod_libro
+group by l.cod_libro, l.titulo
 order by valoracion_media desc
 limit 30
 
 -- Alternativa más sencilla: usando vistas
-select l.cod_libro, round(vm.valoracion_media, 1) valoracion_media
+select l.cod_libro, l.titulo, round(vm.valoracion_media, 1) valoracion_media
 from libros l join valoracion_media vm
         on l.cod_libro = vm.cod_libro
 where l.cod_libro in (select cod_libro
