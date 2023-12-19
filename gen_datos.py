@@ -45,9 +45,9 @@ parser.add_argument('--calles', nargs='?', default=NOMBRES_CALLE, help='Archivo 
 parser.add_argument('--titulos', nargs='?', default=TITULOS, help='Archivo TXT de títulos de libros')
 
 parser.add_argument('--max-datos', type=int, nargs='?', default=100)
-parser.add_argument('--num-socios', type=int, nargs='?', default=300) # 300
-parser.add_argument('--num-libros', type=int, nargs='?', default=900) # 900
-parser.add_argument('--num-autores', type=int, nargs='?', default=75) # 75
+parser.add_argument('--num-socios', type=int, nargs='?', default=300)
+parser.add_argument('--num-libros', type=int, nargs='?', default=900)
+parser.add_argument('--num-autores', type=int, nargs='?', default=75)
 parser.add_argument('--num-bibliotecarios', type=int, nargs='?', default=2*len(BIBLIOTECAS))
 parser.add_argument('--num-prestamos', type=int, nargs='?', default=3000)
 args = parser.parse_args()
@@ -81,13 +81,12 @@ with open(args.salida, 'w') as out, NombresVac(args.vacunodromo) as nombres, ope
 
     #### Socios ####
     out.write('\n-- Socios\n')
-    sentencia = 'insert into socios (cod_socio, nombre, apellido1, apellido2, email, direccion, grado, fecha_egresado) values\n'
+    sentencia = 'insert into socios (nombre, apellido1, apellido2, email, direccion, grado, fecha_egresado) values\n'
 
     for cod_socio, socio in enumerate(nombres):
         if cod_socio >= args.num_socios: break
 
         tupla = (
-            cod_socio+1,
             *socio,
             gen_email(*socio),
             gen_direccion(args.calles),
@@ -100,13 +99,12 @@ with open(args.salida, 'w') as out, NombresVac(args.vacunodromo) as nombres, ope
     #### Libros ####
     libros_biblioteca = []
     out.write('\n-- Libros\n')
-    sentencia = 'insert into libros (cod_libro, titulo, idioma, editorial, edicion, fecha_pub, paginas, biblioteca) values\n'
+    sentencia = 'insert into libros (titulo, idioma, editorial, edicion, fecha_pub, paginas, biblioteca) values\n'
 
     for cod_libro, titulo in enumerate(titulos):
         if cod_libro >= args.num_libros: break
 
         tupla = (
-            cod_libro+1,
             titulo.strip(),
             gen_idioma(),
             gen_editorial(args.editoriales),
