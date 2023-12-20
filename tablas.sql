@@ -84,7 +84,7 @@ create table prestamos (
                          on update cascade
                          on delete set default,
     fecha_prestamo   timestamp,
-    fecha_devolucion timestamp,
+    fecha_devolucion timestamp default null,
     primary key (socio, libro, bibliotecario, fecha_prestamo)
 );
 
