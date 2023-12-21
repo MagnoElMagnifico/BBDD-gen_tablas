@@ -38,20 +38,20 @@ having count(libro) = (select count(libro) num
 
 
 -- 4: Obtener la valoración media de cada autor según los libros que ha escrito
-select a.nombre, a.apellido1, a.apellido2,
+select e.nombre, e.apellido1, e.apellido2,
        round(avg(v.valoracion), 1) valoracion_autor,
        count(v.valoracion) num_valoraciones
-from escribir e join valoraciones v on l.cod_libro = v.libro
-group by a.nombre, a.apellido1, a.apellido2 
+from escribir e join valoraciones v using (libro)
+group by e.nombre, e.apellido1, e.apellido2 
 order by valoracion_autor desc, num_valoraciones desc
 
 
 -- 5: Obtener el nombre de los autores que tienen 5 libros o más en la "ETSE"
-select a.nombre, a.apellido1, a.apellido2
+select e.nombre, e.apellido1, e.apellido2
 from escribir e join libros l on e.libro = l.cod_libro
 where l.biblioteca = 'ETSE'
-group by a.nombre, a.apellido1, a.apellido2
-having count(a.nombre) >= 5
+group by e.nombre, e.apellido1, e.apellido2
+having count(e.nombre) >= 5
 
 
 -- 6: Obtener todos los libros que ha tomado prestado el usuario que más tiempo lleva matriculado en la universidad
